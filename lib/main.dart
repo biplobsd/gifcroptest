@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as crop;
 import 'package:path/path.dart';
+import 'package:widgets_to_image/widgets_to_image.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,11 +56,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Uint8List? imageBytesRoot;
   Uint8List? croppedImageBytesRoot;
+  Uint8List? widgetToImageRoot;
   String? fileNameRoot;
   TextEditingController? cX = TextEditingController(text: '0');
   TextEditingController? cY = TextEditingController(text: '0');
   TextEditingController? cHeight = TextEditingController(text: '300');
   TextEditingController? cwidth = TextEditingController(text: '300');
+
+  WidgetsToImageController cWTI = WidgetsToImageController();
 
   Uint8List cropImage(CropInputModel input) {
     var cropedImage = crop.copyCrop(
@@ -120,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton.icon(
-                  label: const Text('Input image'),
+                  label: const Text('Input'),
                   onPressed: () async {
                     var rawImgbytes = await inputImage();
                     setState(() {
@@ -133,8 +137,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   icon: const Icon(Icons.upload_file),
                 ),
                 if (imageBytesRoot != null)
+                Tooltip(
+                  message: 'Widget to image',
+                  child: TextButton.icon(
+                    label: const Text('Capture'),
+                    onPressed: () async {
+                      var widgetToImage = await cWTI.capture();
+                      setState(() {
+                        if (widgetToImage != null) {
+                          widgetToImageRoot = widgetToImage;
+                        }
+                      });
+                    },
+                    icon: const Icon(Icons.camera),
+                  ),
+                ),
+                if (imageBytesRoot != null)
                   TextButton.icon(
-                    label: const Text('Crop image'),
+                    label: const Text('Crop'),
                     onPressed: () {
                       var rawCroppedImage = cropImage(CropInputModel(
                         imgBytes:
@@ -173,12 +193,31 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     child: Column(
                       children: [
+                        WidgetsToImage(
+                          controller: cWTI,
+                          child: SizedBox(
+                            height: 300,
+                            width: 300,
+                            child: Image.memory(imageBytesRoot!),
+                          ),
+                        ),
+                        const Text('Main')
+                      ],
+                    ),
+                  ),
+                if (widgetToImageRoot != null)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(),
+                    ),
+                    child: Column(
+                      children: [
                         SizedBox(
                           height: 300,
                           width: 300,
-                          child: Image.memory(imageBytesRoot!),
+                          child: Image.memory(widgetToImageRoot!),
                         ),
-                        const Text('Main image')
+                        const Text('Captured')
                       ],
                     ),
                   ),
@@ -194,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           width: 300,
                           child: Image.memory(croppedImageBytesRoot!),
                         ),
-                        const Text('Cropped image')
+                        const Text('Cropped')
                       ],
                     ),
                   ),

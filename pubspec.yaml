@@ -41,6 +41,7 @@ dependencies:
   download:
     git: https://github.com/biplobsd/dart_download.git
   path: ^1.8.2
+  widgets_to_image: ^0.0.2
     
 dev_dependencies:
   flutter_test:
