@@ -155,17 +155,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     label: Text('Download $fileNameRoot'),
                     onPressed: () {
                       download(croppedImageBytesRoot!, 'crop_$fileNameRoot');
-                      var rawCroppedImage = cropImage(CropInputModel(
-                        imgBytes:
-                            crop.decodeImage(imageBytesRoot!) as crop.Image,
-                        pixelHeight: int.parse(cHeight!.text),
-                        pixelWidth: int.parse(cwidth!.text),
-                        x: int.parse(cX!.text),
-                        y: int.parse(cY!.text),
-                      ));
-                      setState(() {
-                        croppedImageBytesRoot = rawCroppedImage;
-                      });
                     },
                     icon: const Icon(Icons.download),
                   ),
