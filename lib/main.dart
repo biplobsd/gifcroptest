@@ -67,7 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
       input.pixelHeight,
     );
 
-    return Uint8List.fromList(crop.encodePng(
+    return Uint8List.fromList(crop.encodeGif(
       cropedImage,
     ));
   }
