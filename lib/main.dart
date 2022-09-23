@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as crop;
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 import 'package:widgets_to_image/widgets_to_image.dart';
 
 void main() {
@@ -73,10 +73,27 @@ class _MyHomePageState extends State<MyHomePage> {
       input.pixelWidth,
       input.pixelHeight,
     );
-
-    return Uint8List.fromList(crop.encodeGif(
+    return Uint8List.fromList(crop.encodePng(
       cropedImage,
     ));
+  }
+
+  Uint8List? cropImageAnim({
+    required Uint8List imgFileBytes,
+    required int x,
+    required int y,
+    required int width,
+    required int height,
+  }) {
+    crop.Animation? anim = crop.decodeAnimation(imgFileBytes);
+    if (anim != null) {
+      for (int f = 0; f < anim.length; ++f) {
+        anim.frames[f] = crop.copyCrop(anim.frames[f], x, y, width, height);
+      }
+
+      return crop.encodeGifAnimation(anim) as Uint8List;
+    }
+    return null;
   }
 
   Future<List<dynamic>?> inputImage() async {
@@ -97,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         imageBytes = await file.readAsBytes();
-        fileName = basename(file.path);
+        fileName = path.basename(file.path);
       } else {
         imageBytes = result.files.first.bytes;
         fileName = result.files.first.name;
@@ -137,33 +154,52 @@ class _MyHomePageState extends State<MyHomePage> {
                   icon: const Icon(Icons.upload_file),
                 ),
                 if (imageBytesRoot != null)
-                Tooltip(
-                  message: 'Widget to image',
-                  child: TextButton.icon(
-                    label: const Text('Capture'),
-                    onPressed: () async {
-                      var widgetToImage = await cWTI.capture();
-                      setState(() {
-                        if (widgetToImage != null) {
-                          widgetToImageRoot = widgetToImage;
-                        }
-                      });
-                    },
-                    icon: const Icon(Icons.camera),
+                  Tooltip(
+                    message: 'Widget to image',
+                    child: TextButton.icon(
+                      label: const Text('Capture'),
+                      onPressed: () async {
+                        var widgetToImage = await cWTI.capture();
+                        setState(() {
+                          if (widgetToImage != null) {
+                            widgetToImageRoot = widgetToImage;
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.camera),
+                    ),
                   ),
-                ),
                 if (imageBytesRoot != null)
                   TextButton.icon(
                     label: const Text('Crop'),
                     onPressed: () {
-                      var rawCroppedImage = cropImage(CropInputModel(
-                        imgBytes:
-                            crop.decodeImage(imageBytesRoot!) as crop.Image,
-                        pixelHeight: int.parse(cHeight!.text),
-                        pixelWidth: int.parse(cwidth!.text),
-                        x: int.parse(cX!.text),
-                        y: int.parse(cY!.text),
-                      ));
+                      Uint8List rawCroppedImage;
+                      int h = int.parse(cHeight!.text);
+                      int w = int.parse(cwidth!.text);
+                      int x = int.parse(cX!.text);
+                      int y = int.parse(cY!.text);
+                      if (path.extension(fileNameRoot!) == '.gif') {
+                        var cropAnim = cropImageAnim(
+                          imgFileBytes: imageBytesRoot!,
+                          height: h,
+                          width: w,
+                          x: x,
+                          y: y,
+                        );
+                        if (cropAnim == null) {
+                          return;
+                        }
+                        rawCroppedImage = cropAnim;
+                      } else {
+                        rawCroppedImage = cropImage(CropInputModel(
+                          imgBytes:
+                              crop.decodeImage(imageBytesRoot!) as crop.Image,
+                          pixelHeight: h,
+                          pixelWidth: w,
+                          x: x,
+                          y: y,
+                        ));
+                      }
                       setState(() {
                         croppedImageBytesRoot = rawCroppedImage;
                       });
@@ -172,7 +208,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 if (croppedImageBytesRoot != null && fileNameRoot != null)
                   TextButton.icon(
-                    label: Text('Download $fileNameRoot'),
+                    label: Text('Download crop_$fileNameRoot'),
                     onPressed: () {
                       download(croppedImageBytesRoot!, 'crop_$fileNameRoot');
                     },
