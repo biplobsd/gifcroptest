@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:download/download.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as crop;
+import 'package:path/path.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,6 +55,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Uint8List? imageBytesRoot;
   Uint8List? croppedImageBytesRoot;
+  String? fileNameRoot;
   TextEditingController? cX = TextEditingController(text: '0');
   TextEditingController? cY = TextEditingController(text: '0');
   TextEditingController? cHeight = TextEditingController(text: '300');
@@ -72,7 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
     ));
   }
 
-  Future<Uint8List?> inputImage() async {
+  Future<List<dynamic>?> inputImage() async {
+    String fileName = '';
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['png', 'jpeg', 'gif', 'ttf'],
@@ -89,12 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         imageBytes = await file.readAsBytes();
+        fileName = basename(file.path);
       } else {
         imageBytes = result.files.first.bytes;
+        fileName = result.files.first.name;
       }
 
       if (imageBytes != null) {
-        return imageBytes;
+        return [imageBytes, fileName];
       }
     }
     return null;
@@ -119,7 +125,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     var rawImgbytes = await inputImage();
                     setState(() {
                       if (rawImgbytes != null) {
-                        imageBytesRoot = rawImgbytes;
+                        imageBytesRoot = rawImgbytes[0];
+                        fileNameRoot = rawImgbytes[1];
                       }
                     });
                   },
@@ -142,6 +149,25 @@ class _MyHomePageState extends State<MyHomePage> {
                       });
                     },
                     icon: const Icon(Icons.crop),
+                  ),
+                if (croppedImageBytesRoot != null && fileNameRoot != null)
+                  TextButton.icon(
+                    label: Text('Download $fileNameRoot'),
+                    onPressed: () {
+                      download(croppedImageBytesRoot!, 'crop_$fileNameRoot');
+                      var rawCroppedImage = cropImage(CropInputModel(
+                        imgBytes:
+                            crop.decodeImage(imageBytesRoot!) as crop.Image,
+                        pixelHeight: int.parse(cHeight!.text),
+                        pixelWidth: int.parse(cwidth!.text),
+                        x: int.parse(cX!.text),
+                        y: int.parse(cY!.text),
+                      ));
+                      setState(() {
+                        croppedImageBytesRoot = rawCroppedImage;
+                      });
+                    },
+                    icon: const Icon(Icons.download),
                   ),
               ],
             ),
